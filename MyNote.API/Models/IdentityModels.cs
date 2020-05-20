@@ -28,7 +28,9 @@ namespace MyNote.API.Models
         public ApplicationDbContext()
             : base("DefaultConnection", throwIfV1Schema: false)
         {
+            Configuration.ProxyCreationEnabled = false; //virtuallarin anlami kalmaz lazyloading kapalii
         }
+
 
         public static ApplicationDbContext Create()
         {
