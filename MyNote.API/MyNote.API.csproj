@@ -217,6 +217,10 @@
     <Compile Include="Controllers\NotesController.cs" />
     <Compile Include="Controllers\TestController.cs" />
     <Compile Include="Controllers\ValuesController.cs" />
+    <Compile Include="Dtos\NewNoteDTO.cs" />
+    <Compile Include="Dtos\NoteDTO.cs" />
+    <Compile Include="Dtos\UpdateNoteDTO.cs" />
+    <Compile Include="Extensions\DtoExtensions.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

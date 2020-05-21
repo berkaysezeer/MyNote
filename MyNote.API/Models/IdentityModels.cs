@@ -28,7 +28,8 @@ namespace MyNote.API.Models
         public ApplicationDbContext()
             : base("DefaultConnection", throwIfV1Schema: false)
         {
-            Configuration.ProxyCreationEnabled = false; //virtuallarin anlami kalmaz lazyloading kapalii
+            //xml serialization hatasini ve circular referencing loop hatasini çozer
+            //Configuration.ProxyCreationEnabled = false; //virtuallarin anlami kalmaz lazyloading kapalii
         }
 
 
