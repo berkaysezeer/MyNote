@@ -1,5 +1,7 @@
 ﻿// GLOBALS
 var apiUrl = "https://localhost:44373/";
+var selectedNote = null;
+var selectedLink = null;
 
 // FUNCTIONS
 function checkLogin() {
@@ -10,25 +12,67 @@ function checkLogin() {
         return;
     }
 
-    // token'ı geçerli mi?
-    $.ajax({
-        url: apiUrl + "api/Account/UserInfo",
-        type: "GET",
-        headers: { Authorization: "Bearer " + loginData.access_token },
-        success: function (data) {
-            showAppPage();
-        },
-        error: function () {
-            showLoginPage();
-        }
+    //is token valid
+    ajax("api/Account/UserInfo", "GET", null, function (data) {
+        showAppPage();
+    }, function () {
+        showLoginPage();
     });
+}
+
+function getAuthHeader() {
+    return { Authorization: "Bearer " + getLoginData().access_token };
+}
+
+function ajax(url, type, data, successFunc, errorFunc) {
+    $.ajax({
+        url: apiUrl + url,
+        type: type,
+        data: data,
+        headers: getAuthHeader(),
+        success: successFunc,
+        error: errorFunc
+    });
+}
+
+function updateNote() {
+    ajax("api/Notes/Update/" + selectedNote.Id, "PUT",
+        { Id: selectedNote.Id, Title: $("#title").val(), Content: $("#content").val() },
+        function (data) {
+            selectedLink.note = data;
+            selectedLink.text = data.Title;
+        },
+        function () {
+
+        }
+    );
 }
 
 function showAppPage() {
     $(".only-logged-out").hide();
     $(".only-logged-in").show();
     $(".page").hide();
-    $("#page-app").show();
+
+    //getnotes
+
+    ajax("api/Notes/List", "GET", null,
+        function (data) {
+            console.log(data);
+
+
+            for (var i = 0; i < data.length; i++) {
+                var a = $("<a/>").attr("href", "#")
+                    .addClass("list-group-item list-group-item-action show-note")
+                    .text(data[i].Title).prop("note", data[i]);
+
+                $("#notes").append(a);
+            }
+
+            $("#page-app").show();
+        }, function () {
+
+        });
+
 }
 
 function showLoginPage() {
@@ -171,6 +215,29 @@ $("#btnLogout").click(function (event) {
     sessionStorage.removeItem["login"];
     localStorage.removeItem["login"];
     showLoginPage();
+});
+
+$("body").on("click", ".show-note", function (event) {
+    event.preventDefault();
+    selectedNote = this.note;
+    selectedLink = this;
+    $("#title").val(selectedNote.Title)
+    $("#content").val(selectedNote.Content)
+
+    $(".show-note").removeClass("active");
+    $(this).addClass("active");
+
+});
+
+$("#frmNote").submit(function (event) {
+
+    event.preventDefault();
+
+    if (selectedNote) {
+        updateNote();
+    } else {
+        addNote();
+    }
 });
 
 // ACTIONS
