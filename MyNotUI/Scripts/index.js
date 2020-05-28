@@ -1,11 +1,54 @@
-﻿var apiUrl = "https://localhost:44373/";
+﻿// GLOBALS
+var apiUrl = "https://localhost:44373/";
 
-function isLoggedIn() {
+// FUNCTIONS
+function checkLogin() {
+    var loginData = getLoginData();
 
+    if (!loginData || !loginData.access_token) {
+        showLoginPage();
+        return;
+    }
+
+    // token'ı geçerli mi?
+    $.ajax({
+        url: apiUrl + "api/Account/UserInfo",
+        type: "GET",
+        headers: { Authorization: "Bearer " + loginData.access_token },
+        success: function (data) {
+            showAppPage();
+        },
+        error: function () {
+            showLoginPage();
+        }
+    });
 }
 
-function loginData() {
+function showAppPage() {
+    $(".only-logged-out").hide();
+    $(".only-logged-in").show();
+    $(".page").hide();
+    $("#page-app").show();
+}
 
+function showLoginPage() {
+    $(".only-logged-in").hide();
+    $(".only-logged-out").show();
+    $(".page").hide();
+    $("#page-login").show();
+}
+
+function getLoginData() {
+    var json = sessionStorage["login"] || localStorage["login"];
+
+    if (json) {
+        try {
+            return JSON.parse(json);
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
 }
 
 function success(message) {
@@ -54,6 +97,7 @@ function resetLoginForms() {
     });
 }
 
+// EVENTS
 $(document).ajaxStart(function () {
     $(".loading").removeClass("d-none");
 });
@@ -61,7 +105,6 @@ $(document).ajaxStart(function () {
 $(document).ajaxStop(function () {
     $(".loading").addClass("d-none");
 });
-
 
 $("#signupform").submit(function (event) {
     event.preventDefault();
@@ -82,26 +125,30 @@ $("#signinform").submit(function (event) {
 
     $.post(apiUrl + "Token", formData, function (data) {
 
-
-        var datastr = JSON.stringify(data); //nesneti stringe cevirir
+        var datastr = JSON.stringify(data);
         if ($("#signinrememberme").prop("checked")) {
-            sessionStorage.removeItem("login")
+            sessionStorage.removeItem("login");
             localStorage["login"] = datastr;
         } else {
-            localStorage.removeItem("login")
+            localStorage.removeItem("login");
             sessionStorage["login"] = datastr;
         }
 
         resetLoginForms();
-        success("You have been logged in successfuly. Now, you are being redirected...");
+        success("You have been logged in successfully. Redirecting..");
 
+        setTimeout(function () {
+            $("#login").addClass("d-print-none");
+
+            showAppPage();
+
+        }, 1000);
 
     }).fail(function (xhr) {
         errorMessage(xhr.responseJSON.error_description);
     });
 
 });
-
 
 // https://getbootstrap.com/docs/4.0/components/navs/#events
 $('#login a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
@@ -111,8 +158,21 @@ $('#login a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
     resetLoginForms();
 });
 
-$(".navbar-login a").click(function () {
+$(".navbar-login a").click(function (event) {
+    event.preventDefault();
     var href = $(this).attr("href");
-    $('#pills-tab a[href="' + href + '"]').tab('show')
-
+    // https://getbootstrap.com/docs/4.0/components/navs/#via-javascript
+    $('#pills-tab a[href="' + href + '"]').tab('show'); // Select tab by name
 });
+
+$("#btnLogout").click(function (event) {
+    event.preventDefault();
+    resetLoginForms();
+    sessionStorage.removeItem["login"];
+    localStorage.removeItem["login"];
+    showLoginPage();
+});
+
+// ACTIONS
+checkLogin();
+
