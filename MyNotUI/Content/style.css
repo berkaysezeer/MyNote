@@ -34,3 +34,7 @@ body {
     .loading > div {
         margin: auto;
     }
+
+.login-tabs-container {
+    margin-top: -40px;
+}

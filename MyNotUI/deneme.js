@@ -1,10 +1,14 @@
-﻿// GLOBALS
-var apiUrl = "https://localhost:44373/";
+﻿// Globals
+var apiUrl = "https://localhost:44336/";
+var loginData = null;
 var selectedNote = null;
-var selectedLink = null; //dom element tutuyoruz
+var selectedLink = null;
 
-// FUNCTIONS
+// Functions
+
 function checkLogin() {
+    //sessionstorage ve localstorage da tutulan login bilgilerine bakarak login olup olmadığına karar ver ve eğer loginse uygulamayı aç login değilse login/register sayfasını göster
+
     var loginData = getLoginData();
 
     if (!loginData || !loginData.access_token) {
@@ -12,16 +16,77 @@ function checkLogin() {
         return;
     }
 
-    //is token valid
-    ajax("api/Account/UserInfo", "GET", null, function (data) {
-        showAppPage();
-    }, function () {
-        showLoginPage();
-    });
+    // is token valid?
+    ajax("api/Account/UserInfo", "GET", null,
+        function (data) {
+            console.log(data);
+            showAppPage();
+        }, function () {
+            showLoginPage();
+        });
 }
 
-function getAuthHeader() {
-    return { Authorization: "Bearer " + getLoginData().access_token };
+function getLoginData() {
+    //sessionstorage'a bak eğer orada bulamadıysan localstorage'da kayıtlı login data'yı json'dan object'e dönüştür ve yolla eğer yoksa null yolla
+
+    var json = sessionStorage["login"] || localStorage["login"];
+
+    if (json) {
+        try {
+            return JSON.parse(json);
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
+
+}
+
+function showAppPage() {
+    $(".only-logged-in").show();
+    $(".only-logged-out").hide();
+    $(".page").hide();
+
+    //notları getir
+    ajax("api/Notes/List", "GET", null,
+        function (data) {
+
+            $("#notes").html("");
+
+            for (var i = 0; i < data.length; i++) {
+
+                addMenuLink(data[i]);
+            }
+            //sayfa hazır olduğunda göster
+            $("#page-app").show();
+        },
+        function () {
+        });
+
+}
+
+function addMenuLink(note, isActive = false) {
+    var a = $("<a/>")
+        .attr("href", "#")
+        .addClass("list-group-item list-group-item-action show-note")
+        .text(note.Title)
+        .prop("note", note);
+
+    if (isActive) {
+        $(".show-note").removeClass("active");
+        a.addClass("active");
+        selectedLink = a[0];
+        selectedNote = note;
+    }
+
+    $("#notes").append(a);
+}
+
+function showLoginPage() {
+    $(".only-logged-in").hide();
+    $(".only-logged-out").show();
+    $(".page").hide();
+    $("#page-login").show();
 }
 
 function ajax(url, type, data, successFunc, errorFunc) {
@@ -35,90 +100,30 @@ function ajax(url, type, data, successFunc, errorFunc) {
     });
 }
 
+function addNote() {
+    ajax("api/Notes/New/", "POST",
+        { Title: $("#title").val(), Content: $("#content").val() },
+        function (data) {
+            addMenuLink(data, true);
+        }, function () {
+
+        });
+}
+
 function updateNote() {
     ajax("api/Notes/Update/" + selectedNote.Id, "PUT",
         { Id: selectedNote.Id, Title: $("#title").val(), Content: $("#content").val() },
         function (data) {
             selectedLink.note = data;
-            $(selectedLink).text(data.Title);
-        },
-        function () {
-
-        }
-    );
-}
-
-function addNote() {
-    ajax("api/Notes/New", "POST",
-        { Title: $("#title").val(), Content: $("#content").val() },
-        function (data) {
-            addMenuLink(data, true);
-        },
-        function () {
-
-        }
-    );
-}
-
-function showAppPage() {
-    $(".only-logged-out").hide();
-    $(".only-logged-in").show();
-    $(".page").hide();
-
-    //getnotes
-
-    ajax("api/Notes/List", "GET", null,
-        function (data) {
-
-            $("#notes").html("");
-
-            for (var i = 0; i < data.length; i++) {
-                addMenuLink(data[i]);
-            }
-
-            $("#page-app").show();
+            selectedLink.textContent = data.Title;
+            //$(selectedLink).text(data.Title);
         }, function () {
 
         });
-
 }
 
-function addMenuLink(note, isActive = false) {
-
-    var a = $("<a/ > ").attr("href", "#")
-        .addClass("list-group-item list-group-item-action show-note")
-        .text(note.Title)
-        .prop("note", note);
-
-    if (isActive) {
-
-        $(".show-note").removeClass("active")
-        a.addClass("active");
-        selectedLink = a[0];
-        selectedNote = note;
-    }
-    $("#notes").prepend(a);
-
-}
-
-function showLoginPage() {
-    $(".only-logged-in").hide();
-    $(".only-logged-out").show();
-    $(".page").hide();
-    $("#page-login").show();
-}
-
-function getLoginData() {
-    var json = sessionStorage["login"] || localStorage["login"];
-
-    if (json) {
-        try {
-            return JSON.parse(json);
-        } catch (e) {
-            return null;
-        }
-    }
-    return null;
+function getAuthHeader() {
+    return { Authorization: "Bearer " + getLoginData().access_token }
 }
 
 function success(message) {
@@ -167,15 +172,19 @@ function resetLoginForms() {
     });
 }
 
-function resetNoteForm() {
-    selectedNote = null;
+function resetNoteForms() {
+    // seçili dom elementini null yap
+    // seçili notu null yap
+    // seçili notun active classını kaldır
+    // seçili notun title ve contentini sıfırla
     selectedLink = null;
+    selectedNote = null;
     $(".show-note").removeClass("active");
     $("#title").val("");
     $("#content").val("");
 }
 
-// EVENTS
+// Events
 $(document).ajaxStart(function () {
     $(".loading").removeClass("d-none");
 });
@@ -184,72 +193,50 @@ $(document).ajaxStop(function () {
     $(".loading").addClass("d-none");
 });
 
+//register
 $("#signupform").submit(function (event) {
     event.preventDefault();
-    var formData = $(this).serialize();
+    var formdata = $(this).serialize();
 
-    $.post(apiUrl + "api/Account/Register", formData, function (data) {
+    $.post(apiUrl + "api/Account/Register", formdata, function (data) {
         resetLoginForms();
         success("Your account has been successfully created.");
-    }).fail(function (xhr) {
+
+    }).fail(function (xhr, status, err) {
         error(xhr.responseJSON.ModelState);
     });
 
 });
 
+//login
 $("#signinform").submit(function (event) {
     event.preventDefault();
-    var formData = $(this).serialize();
+    var formdata = $(this).serialize();
 
-    $.post(apiUrl + "Token", formData, function (data) {
+    $.post(apiUrl + "Token", formdata, function (data) {
 
         var datastr = JSON.stringify(data);
         if ($("#signinrememberme").prop("checked")) {
             sessionStorage.removeItem("login");
             localStorage["login"] = datastr;
         } else {
-            localStorage.removeItem("login");
             sessionStorage["login"] = datastr;
         }
 
         resetLoginForms();
         success("You have been logged in successfully. Redirecting..");
-
         setTimeout(function () {
-            $("#login").addClass("d-print-none");
-
+            resetLoginForms();
             showAppPage();
-
         }, 1000);
 
-    }).fail(function (xhr) {
+    }).fail(function (xhr, status, err) {
         errorMessage(xhr.responseJSON.error_description);
     });
 
 });
 
-$("#btnDelete").click(function () {
-    if (selectedNote) {
-        if (confirm("Are you sure to delete the selected note?")) {
-            ajax("api/Notes/Delete/" + selectedNote.Id, "DELETE", null,
-                function (data) {
-                    $(selectedLink).remove();
-                    resetNoteForm();
-                },
-                function () {
-
-                }
-            );
-        }
-    }
-    else {
-        if (confirm("Are you sure to delete the draft?")) {
-            resetNoteForm();
-        }
-    }
-});
-
-// https://getbootstrap.com/docs/4.0/components/navs/#events
+// https://getbootstrap.com/docs/4.0/components/navs/#events	
 $('#login a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
     // e.target // newly activated tab
     // e.relatedTarget // previous active tab
@@ -257,38 +244,39 @@ $('#login a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
     resetLoginForms();
 });
 
+// https://getbootstrap.com/docs/4.0/components/navs/#via-javascript
 $(".navbar-login a").click(function (event) {
     event.preventDefault();
     var href = $(this).attr("href");
-    // https://getbootstrap.com/docs/4.0/components/navs/#via-javascript
     $('#pills-tab a[href="' + href + '"]').tab('show'); // Select tab by name
 });
 
+//logOut
 $("#btnLogout").click(function (event) {
     event.preventDefault();
-    resetNoteForm();
-    resetLoginForms();
-    sessionStorage.removeItem["login"];
-    localStorage.removeItem["login"];
+    sessionStorage.removeItem("login");
+    localStorage.removeItem("login");
     showLoginPage();
+});
+
+// add New note
+$(".add-new-note").click(function () {
+    resetNoteForms();
 });
 
 $("body").on("click", ".show-note", function (event) {
     event.preventDefault();
     selectedNote = this.note;
     selectedLink = this;
-    $("#title").val(selectedNote.Title)
-    $("#content").val(selectedNote.Content)
+    $("#title").val(selectedNote.Title);
+    $("#content").val(selectedNote.Content);
 
     $(".show-note").removeClass("active");
     $(this).addClass("active");
-
 });
 
 $("#frmNote").submit(function (event) {
-
     event.preventDefault();
-
     if (selectedNote) {
         updateNote();
     } else {
@@ -296,12 +284,5 @@ $("#frmNote").submit(function (event) {
     }
 });
 
-$(".add-new-note").click(function () {
-
-    resetNoteForm();
-
-});
-
-// ACTIONS
+// Actions
 checkLogin();
-
