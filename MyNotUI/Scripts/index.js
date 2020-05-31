@@ -1,5 +1,6 @@
 ﻿// GLOBALS
-var apiUrl = "https://localhost:44373/";
+//var apiUrl = "https://localhost:44373/";
+var apiUrl = "https://mynoteapi.berkaysezer.com/";
 var selectedNote = null;
 var selectedLink = null; //dom element tutuyoruz
 
@@ -71,6 +72,8 @@ function showAppPage() {
         function (data) {
 
             $("#notes").html("");
+            $("#navNotes").html("");
+            addCloseButton();
 
             for (var i = 0; i < data.length; i++) {
                 addMenuLink(data[i]);
@@ -83,10 +86,34 @@ function showAppPage() {
 
 }
 
+function addCloseButton() {
+    $("#navNotes").html('<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>')
+}
+
+function openNav() {
+    document.getElementById("navNotes").style.width = "250px";
+    $("#navNotes").addClass("navOpened");
+    $("#navBg").removeClass("d-none");
+    //document.getElementById("page-app").style.marginLeft = "250px";
+    //document.body.style.backgroundColor = "rgba(0,0,0,0.4)";
+}
+
+function closeNav() {
+    document.getElementById("navNotes").style.width = "0";
+    $("#navNotes").removeClass("navOpened");
+    $("#navBg").addClass("d-none");
+}
+
+
 function addMenuLink(note, isActive = false) {
 
     var a = $("<a/ > ").attr("href", "#")
         .addClass("list-group-item list-group-item-action show-note")
+        .text(note.Title)
+        .prop("note", note);
+
+    var nav_a = $("<a/ > ").attr("href", "#")
+        .addClass("show-note")
         .text(note.Title)
         .prop("note", note);
 
@@ -98,6 +125,7 @@ function addMenuLink(note, isActive = false) {
         selectedNote = note;
     }
     $("#notes").prepend(a);
+    $("#navNotes").prepend(nav_a);
 
 }
 
@@ -268,8 +296,8 @@ $("#btnLogout").click(function (event) {
     event.preventDefault();
     resetNoteForm();
     resetLoginForms();
-    sessionStorage.removeItem["login"];
-    localStorage.removeItem["login"];
+    sessionStorage.removeItem("login");
+    localStorage.removeItem("login");
     showLoginPage();
 });
 
@@ -301,6 +329,16 @@ $(".add-new-note").click(function () {
     resetNoteForm();
 
 });
+
+$("#navBg").click(function () {
+    closeNav();
+});
+
+//$("body").click(function () {
+//    if ($("#navNotes").hasClass("navOpened")) {
+//        closeNav();
+//    }
+//});
 
 // ACTIONS
 checkLogin();
