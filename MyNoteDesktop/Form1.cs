@@ -40,6 +40,13 @@ namespace MyNoteDesktop
         private async void btnListNotes_Click(object sender, EventArgs e)
         {
             string token = await GetTokenAsync();
+
+            if (token == null)
+            {
+                MessageBox.Show("Kullanıcı veya paralo yanlış!");
+                return;
+            }
+
             List<Note> notes = await GetNote(token);
             lstNotes.DataSource = notes;
             lstNotes.DisplayMember = "Title";
