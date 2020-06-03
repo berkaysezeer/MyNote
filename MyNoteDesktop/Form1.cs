@@ -78,7 +78,7 @@ namespace MyNoteDesktop
                     new KeyValuePair<string, string>("grant_type", "password"),
                     new KeyValuePair<string, string>("username", UserName),
                     new KeyValuePair<string, string>("password", Password)
-                });
+            });
 
             HttpResponseMessage response = await client.PostAsync("Token", content);
 

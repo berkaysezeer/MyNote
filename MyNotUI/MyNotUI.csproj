@@ -92,6 +92,8 @@
     <Content Include="Content\v4-shims.css" />
     <Content Include="Content\v4-shims.min.css" />
     <Content Include="deneme.js" />
+    <Content Include="directives\messages.html" />
+    <Content Include="img\favicon.ico" />
     <Content Include="index2.html" />
     <Content Include="index.html" />
     <Content Include="pages\app.html" />
